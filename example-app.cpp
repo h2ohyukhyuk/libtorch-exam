@@ -11,41 +11,41 @@
 class CStopWatch
 {
 public:
-	CStopWatch() : m_start(std::chrono::system_clock::now())
-	{}
-	
-	void Reset()
-	{
-		m_start = std::chrono::system_clock::now();
-	}
+  CStopWatch() : m_start(std::chrono::system_clock::now())
+  {}
+  
+  void Reset()
+  {
+    m_start = std::chrono::system_clock::now();
+  }
 
-	void GetElapsed()
-	{
-		m_end = std::chrono::system_clock::now();
-		// Time in double
-		std::chrono::duration<double> elapsed = m_end - m_start;
-		std::chrono::nanoseconds nano = m_end - m_start;
+  void GetElapsed()
+  {
+    m_end = std::chrono::system_clock::now();
+    // Time in double
+    std::chrono::duration<double> elapsed = m_end - m_start;
+    std::chrono::nanoseconds nano = m_end - m_start;
 
-		// Default expression
-		std::cout << elapsed.count() << " seconds..." << std::endl;
-		/*
-		// In nano seconds
-		std::cout << nano.count() << " nano seconds..." << std::endl;
-		// In micro seconds
-		std::chrono::microseconds micro = std::chrono::duration_cast<std::chrono::microseconds>(nano);
-		std::cout << micro.count() << " micro seconds..." << std::endl;
-		// In mili seconds
-		std::chrono::milliseconds milli = std::chrono::duration_cast<std::chrono::milliseconds>(nano);
-		std::cout << milli.count() << " milli seconds..." << std::endl;
-		// In seconds
-		std::chrono::seconds sec = std::chrono::duration_cast<std::chrono::seconds>(nano);
-		std::cout << sec.count() << " seconds..." << std::endl;
-		*/
-	}
+    // Default expression
+    std::cout << elapsed.count() << " seconds..." << std::endl;
+    /*
+    // In nano seconds
+    std::cout << nano.count() << " nano seconds..." << std::endl;
+    // In micro seconds
+    std::chrono::microseconds micro = std::chrono::duration_cast<std::chrono::microseconds>(nano);
+    std::cout << micro.count() << " micro seconds..." << std::endl;
+    // In mili seconds
+    std::chrono::milliseconds milli = std::chrono::duration_cast<std::chrono::milliseconds>(nano);
+    std::cout << milli.count() << " milli seconds..." << std::endl;
+    // In seconds
+    std::chrono::seconds sec = std::chrono::duration_cast<std::chrono::seconds>(nano);
+    std::cout << sec.count() << " seconds..." << std::endl;
+    */
+  }
 
 private:
-	std::chrono::system_clock::time_point m_start;
-	std::chrono::system_clock::time_point m_end;
+  std::chrono::system_clock::time_point m_start;
+  std::chrono::system_clock::time_point m_end;
 };
 
 bool LoadImage(std::string file_name, cv::Mat &image) {
@@ -93,11 +93,11 @@ int RunModel(std::string strPathLabel, std::string strPathModel, std::string str
   torch::jit::script::Module module;
 
   try {
-	  module = torch::jit::load(strPathModel);
+    module = torch::jit::load(strPathModel);
   }
   catch (const c10::Error& e) {
-	  std::cerr << "error loading the module \n";
-	  return -1;
+    std::cerr << "error loading the module \n";
+    return -1;
   }
 
   cv::Mat imgInput;
@@ -110,7 +110,9 @@ int RunModel(std::string strPathLabel, std::string strPathModel, std::string str
 
     //input_tensor = input_tensor.to(at::kCUDA);
 
+    CStopWatch sw;
     torch::Tensor out_tensor = module.forward({input_tensor}).toTensor();
+    sw.GetElapsed();
 
     auto results = out_tensor.sort(-1, true);
     auto softmaxs = std::get<0>(results)[0].softmax(0);
@@ -136,26 +138,27 @@ int main() {
   std::string strPathImage = "C:/projects/libtorch-exam/images/dog.jpg";
   std::string strPathModel;
 
-  CStopWatch sw;
-
   std::cout << "\n---------------------------------------\n";
   strPathModel = "C:/projects/quantization/data/mobilenet_v2_float_scripted.pth";
   std::cout << strPathModel << std::endl;
   RunModel(strPathLabel, strPathModel, strPathImage);
-  sw.GetElapsed();
-  sw.Reset();
+  // 0.259003 seconds...
+
+  std::cout << "\n---------------------------------------\n";
+  strPathModel = "C:/projects/quantization/data/mobilenet_v2_opt_float_scripted.pth";
+  std::cout << strPathModel << std::endl;
+  RunModel(strPathLabel, strPathModel, strPathImage);
+  // 0.113913 seconds...
 
   std::cout << "\n---------------------------------------\n";
   strPathModel = "C:/projects/quantization/data/mobilenet_v2_quant_per_ch_scripted.pth";
   std::cout << strPathModel << std::endl;
   RunModel(strPathLabel, strPathModel, strPathImage);
-  sw.GetElapsed();
-  sw.Reset();
+  // 0.287992 seconds...
 
   std::cout << "\n---------------------------------------\n";
   strPathModel = "C:/projects/quantization/data/mobilenet_v2_opt_quant_per_ch_scripted.pth";
   std::cout << strPathModel << std::endl;
   RunModel(strPathLabel, strPathModel, strPathImage);
-  sw.GetElapsed();
-
+  // 0.0345136 seconds...
 }
